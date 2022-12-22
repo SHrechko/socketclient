@@ -1,0 +1,50 @@
+version: "3"
+
+networks:
+  socketserver:
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./hosts:/etc/nginx/conf.d
+      - ./:/var/www/socketserver
+      - ./logs:/var/log/nginx
+    depends_on:
+      - ws_server
+      - mysql
+    networks:
+      - socketserver
+
+  ws_server:
+    build: ./images/php
+    container_name: ws_server
+    restart: unless-stopped
+    ports:
+      - "8889:8889"
+    depends_on:
+      - mysql
+    links:
+      - mysql
+    volumes:
+      - ./:/var/www/socketserver
+    networks:
+      - socketserver
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    networks:
+      - socketserver
